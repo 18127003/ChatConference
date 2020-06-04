@@ -1,0 +1,9 @@
+#pragma once
+#include "MsgStruct.h"
+#include "MsgControl.h"
+#include "PublicMsg.h"
+#include "PrivateMsg.h"
+#include "LoginMsg.h"
+#include "SignupMsg.h"
+#include "UsrStatusLstMsg.h"
+#include "FileMsg.h"
