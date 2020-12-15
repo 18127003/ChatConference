@@ -1,9 +1,27 @@
 #include "Server.h"
-#include "DataStruct.h"
+
+
+String^ GetLocalIpv4(NetworkInterfaceType type) {
+	for each(NetworkInterface^ item in NetworkInterface::GetAllNetworkInterfaces())
+	{
+		if (item->NetworkInterfaceType == type && item->OperationalStatus == OperationalStatus::Up)
+		{
+			for each(UnicastIPAddressInformation^ ip in item->GetIPProperties()->UnicastAddresses)
+			{
+				if (ip->Address->AddressFamily == AddressFamily::InterNetwork)
+				{
+					return ip->Address->ToString();
+				}
+			}
+		}
+	}
+	return "127.0.0.1";
+}
 
 Server::Server()
 {
-	serverIPAddr = "192.168.1.5";
+	//serverIPAddr = "192.168.159.1";
+	serverIPAddr = GetLocalIpv4(NetworkInterfaceType::Wireless80211);
 	serverPort = 1234;
 
 	createSocket();
@@ -154,7 +172,7 @@ bool Server::login(String^ _UserName, String^ _Password, Socket^ _ClientSocket)
 		cli_list->Add(gcnew Client(_ClientSocket, _UserName));
 		mainScreen->UpdateConnectedClient(getListClient()); //Update list connected
 
-		mainScreen->AddTextToContent(_UserName + " hast just online!");
+		mainScreen->AddTextToContent(_UserName + " has just online!");
 		loginResponse(true, errorMsg, _ClientSocket);
 		mainScreen->UpdateConnectedClient(getListClient());
 		sendLoginNotification(_UserName, _ClientSocket);
@@ -184,34 +202,45 @@ bool Server::signup(String^ _UserName, String^ _Password, Socket^ _ClientSocket)
 
 void Server::signupResponse(bool _IsSucc, String^ errorMsg, Socket^ _ClientSocket)
 {
-	ResSignupMsg^ resmsg = gcnew ResSignupMsg;
-	resmsg->IsSuccess = _IsSucc;
-	resmsg->errorMsg = errorMsg;
-	array<Byte>^ buff = resmsg->pack();
+	MsgStruct^ resmsg = gcnew MsgStruct();
 
-	_ClientSocket->Send(buff); //Send the result to client.
+	resmsg->pack(MessageType::ResponseSignup, nullptr, nullptr);
+	resmsg->pullBool(_IsSucc);
+	resmsg->pullMsg(errorMsg);
+	_ClientSocket->Send(resmsg->getContent()); //Send the result to client.
 }
 
 void Server::userStatusResponse(Socket^ _ClientSocket)
 {
-	UsrStatusLstMsg^ statmsg = gcnew UsrStatusLstMsg;
-	statmsg->lstOnlineUsers = getListClient()->ToArray();
-
-	array<Byte>^ buff = statmsg->pack();
-	_ClientSocket->Send(buff);
+	MsgStruct^ statmsg = gcnew MsgStruct;
+	array<String^>^ lstOnlineUsers = nullptr;
+	lstOnlineUsers = getListClient()->ToArray();
+	String^ strListOnlineUsers = "";
+	if (lstOnlineUsers != nullptr)
+	{
+		for (int i = 0; i < lstOnlineUsers->Length - 1; ++i)
+			strListOnlineUsers += lstOnlineUsers[i] + "|";
+		if (lstOnlineUsers->Length > 0)
+			strListOnlineUsers += lstOnlineUsers[lstOnlineUsers->Length - 1];
+		//End of merging!!
+	}
+	statmsg->pack(MessageType::UserStatus, nullptr, nullptr);
+	statmsg->pullMsg(strListOnlineUsers);
+	_ClientSocket->Send(statmsg->getContent());
 }
 
 void Server::sendLoginNotification(String^ _Username, Socket^ _ClientSocket)
 {
-	LoginNotifiMsg^ loginNoti = gcnew LoginNotifiMsg;
-	loginNoti->strUsername = _Username;
-	array<Byte>^ buff = loginNoti->pack();
+	MsgStruct^ loginNoti = gcnew MsgStruct();
+	//loginNoti->strUsername = _Username;
+	//array<Byte>^ buff = loginNoti->pack();
+	loginNoti->pack(MessageType::LoginNotification, nullptr, _Username);
 
 	for each (Client^ cli in cli_list)
 	{
 		if (cli->clientSocket != _ClientSocket) //Send the others login notication
 		{
-			cli->clientSocket->Send(buff);
+			cli->clientSocket->Send(loginNoti->getContent());
 		}
 	}
 }
@@ -219,11 +248,10 @@ void Server::sendLoginNotification(String^ _Username, Socket^ _ClientSocket)
 void Server::sendLogoutNotification(Socket^ _ClientSocket)
 {
 	String^ clientUsername = getUsernameBySocket(_ClientSocket);
-	LogoutNotiMsg^ logoutNoti = gcnew LogoutNotiMsg;
-	logoutNoti->strUsername = clientUsername;
-	array<Byte>^ buff = logoutNoti->pack();
+	MsgStruct^ logoutNoti = gcnew MsgStruct();
+	logoutNoti->pack(MessageType::LogoutNotification, nullptr, clientUsername);
 
-	mainScreen->AddTextToContent(clientUsername + " hast just offline!");
+	mainScreen->AddTextToContent(clientUsername + " has just offline!");
 	removeClientByUsername(clientUsername);
 	mainScreen->UpdateConnectedClient(getListClient()); //Update list connected
 
@@ -231,103 +259,118 @@ void Server::sendLogoutNotification(Socket^ _ClientSocket)
 	{
 		if (cli->clientSocket != _ClientSocket) //Send the others logout notication
 		{
-			cli->clientSocket->Send(buff);
+			cli->clientSocket->Send(logoutNoti->getContent());
 		}
 	}
 }
-/*
-void Server::requestSendFile(String^ _ToUsername, String^ _FileName, int _iFileSize, Socket^ _ClientSocket)
+
+void Server::requestSendFile(String^ _ToUsername, String^ _FileName, int _iFileSize, Socket^ _ClientSocket)  //change
 {
 	String^ sender = getUsernameBySocket(_ClientSocket);
-	RequestFileMsg^ freq = gcnew RequestFileMsg;
-	freq->strUsername = sender;
-	freq->strFileName = _FileName;
-	freq->iFileSize = _iFileSize;
-
+	MsgStruct^ freq = gcnew MsgStruct;
+	freq->pack(MessageType::RequestSendFile, nullptr, sender);
+	freq->pullMsg(_FileName);
+	freq->pullInt(_iFileSize);
 	Socket^ receiver = getSocketByUsername(_ToUsername);
-	array<Byte>^ byteData = freq->pack();
-	receiver->Send(byteData);
+	receiver->Send(freq->getContent());
 }
 
 void Server::responseSendFile(String^ _ToUsername, bool _IsAccept, Socket^ _ClientSocket)
 {
 	String^ sender = getUsernameBySocket(_ClientSocket);
-	ResponseFileMsg^ fres = gcnew ResponseFileMsg;
-	fres->strUsername = sender;
-	fres->IsAccept = _IsAccept;
+	MsgStruct^ fres = gcnew MsgStruct;
+	//fres->strUsername = sender;
+	//fres->IsAccept = _IsAccept;
 
 	Socket^ receiver = getSocketByUsername(_ToUsername);
-	array<Byte>^ byteData = fres->pack();
-	receiver->Send(byteData);
+	fres->pack(MessageType::ResponseSendFile, nullptr, sender);
+	fres->pullBool(_IsAccept);
+	receiver->Send(fres->getContent());
 }
 
 void Server::sendPrivateFilePackage(String^ _ToUsername, String^ _Filename, int _iPackageNumber, int _TotalPackage, array<Byte>^ _bData, Socket^ _ClientSocket)
 {
 	String^ sender = getUsernameBySocket(_ClientSocket);
-	PrivateFileMsg^ prvfmsg = gcnew PrivateFileMsg;
-	prvfmsg->strUsername = sender;
-	prvfmsg->strFilename = _Filename;
-	prvfmsg->bData = _bData;
-	prvfmsg->iPackageNumber = _iPackageNumber;
-	prvfmsg->iTotalPackage = _TotalPackage;
+	MsgStruct^ prvfmsg = gcnew MsgStruct;
 
-	array<Byte>^ byteData = prvfmsg->pack();
+	prvfmsg->pack(MessageType::PrivateFile, nullptr, sender);
+	prvfmsg->pullMsg(_Filename);
+	prvfmsg->pullInt(_iPackageNumber);
+	prvfmsg->pullInt(_TotalPackage);
+	prvfmsg->pullData(_bData);
 	Socket^ receiver = getSocketByUsername(_ToUsername);
-	receiver->Send(byteData);
+	receiver->Send(prvfmsg->getContent());
 }
-*/
+
 void Server::loginResponse(bool _IsSucc, String^ _errorMsg, Socket^ _ClientSocket)
 {
-	ResLoginMsg^ resmsg = gcnew ResLoginMsg;
-	resmsg->IsSuccess = _IsSucc;
-	resmsg->errorMsg = _errorMsg;
-	array<Byte>^ buff = resmsg->pack();
+	MsgStruct^ resmsg = gcnew MsgStruct;
+	//resmsg->IsSuccess = _IsSucc;
+	//resmsg->errorMsg = _errorMsg;
+	//array<Byte>^ buff = resmsg->pack();
+	resmsg->pack(MessageType::ResponseLogin, nullptr, nullptr);
+	resmsg->pullBool(_IsSucc);
+	resmsg->pullMsg(_errorMsg);
+	//if (_errorMsg != nullptr) resmsg->pullMsg(_errorMsg);
 
-	_ClientSocket->Send(buff); //Send the result to client.
+	_ClientSocket->Send(resmsg->getContent()); //Send the result to client.
 }
 
 int Server::sendPublicMsgToClients(String^ _strMessage, Socket^ _ClientSocket)
 {
 	String^ username = getUsernameBySocket(_ClientSocket);
 	String^ cli_msg = username + ": " + _strMessage;
-	PublicMsg^ Msgpack = gcnew PublicMsg;
-	Msgpack->strMessage = cli_msg;                    //Set msg content
-	array<Byte>^ buff = Msgpack->pack();			//Pack msg to send
+	MsgStruct^ Msgpack = gcnew MsgStruct;
+	//Msgpack->strMessage = cli_msg;                    //Set msg content
+	//array<Byte>^ buff = Msgpack->pack();			//Pack msg to send
+	Msgpack->pack(MessageType::PublicMessage, nullptr, nullptr);
+	Msgpack->pullMsg(cli_msg);
 
 	for each (Client^ cli in cli_list)
 	{
-		cli->clientSocket->Send(buff);
+		cli->clientSocket->Send(Msgpack->getContent());
 	}
 
 	return 0;
 }
-/*
+
+void Server::sendPublicFilePackage(String^ _Filename, int _iPackageNumber, int _TotalPackage, array<Byte>^ _bData) {
+	MsgStruct^ Msgpack = gcnew MsgStruct;
+	Msgpack->pack(MessageType::PublicFile, nullptr, nullptr);
+	Msgpack->pullMsg(_Filename);
+	Msgpack->pullInt(_iPackageNumber);
+	Msgpack->pullInt(_TotalPackage);
+	Msgpack->pullData(_bData);
+	for each (Client^ cli in cli_list)
+	{
+		cli->clientSocket->Send(Msgpack->getContent());
+	}
+}
+
 int Server::sendPrivateMessage(String^ _ToUsername, String^ _Message, Socket^ _SenderSocket)
 {
 	String^ sender = getUsernameBySocket(_SenderSocket);
 	Socket^ receiverSocket = getSocketByUsername(_ToUsername);
 	//If receiver is offline (nullptr)
 
-	PrivateMessageMsg^ prvmsg = gcnew PrivateMessageMsg;
+	MsgStruct^ prvmsg = gcnew MsgStruct;
 	if (receiverSocket == nullptr)
 	{
 		//Send error message back to sender
-		privateMessageMsg->strMessage = "Error: " + _ToUsername + " is offline!";
-		privateMessageMsg->strToUsername = _ToUsername;
-		array<Byte>^ byteData = privateMessageMsg->pack();
-		_SenderSocket->Send(byteData);
+		prvmsg->pack(MessageType::PrivateMessage, _ToUsername, nullptr);
+		prvmsg->pullMsg("Error: " + _ToUsername + " is offline!");
+		_SenderSocket->Send(prvmsg->getContent());
 	}
 	else
 	{
-		privateMessageMsg->strMessage = sender + ": " + _Message;
-		privateMessageMsg->strToUsername = sender;
-		array<Byte>^ byteData = privateMessageMsg->pack();
-		receiverSocket->Send(byteData);
+		prvmsg->pack(MessageType::PrivateMessage, sender, nullptr);
+		prvmsg->pullMsg(sender + ": " + _Message);
+		receiverSocket->Send(prvmsg->getContent());
 	}
 
 	return 0;
 }
-*/
+
 
 
 String^ Server::getUsernameBySocket(Socket^ _socket)

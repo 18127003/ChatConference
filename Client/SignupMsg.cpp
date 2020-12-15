@@ -1,4 +1,5 @@
 #include "SignupMsg.h"
+/*
 SignupMsg::SignupMsg()
 {
 	strUsername = nullptr;
@@ -88,3 +89,4 @@ MsgStruct^ ResSignupMsg::unpack(array<Byte>^ buff)
 
 	return this;
 }
+*/

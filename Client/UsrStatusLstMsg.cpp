@@ -1,15 +1,16 @@
 #include "UsrStatusLstMsg.h"
 UsrStatusLstMsg::UsrStatusLstMsg()
 {
-	lstOnlineUsers = nullptr;
+	//lstOnlineUsers = nullptr;
 }
 
-array<Byte>^ UsrStatusLstMsg::pack()
+void UsrStatusLstMsg::pack()
 {
-	List<Byte>^ byteData = gcnew List<Byte>();
-	byteData->AddRange(BitConverter::GetBytes(int(MsgStruct::MessageType::UserStatus)));
+	//List<Byte>^ byteData = gcnew List<Byte>();
+	content->AddRange(BitConverter::GetBytes(int(MessageType::UserStatus)));
 
 	//Merge list to string
+	/*
 	String^ strListOnlineUsers = "";
 	if (lstOnlineUsers != nullptr)
 	{
@@ -31,9 +32,10 @@ array<Byte>^ UsrStatusLstMsg::pack()
 
 	//Return
 	return byteData->ToArray();
+	*/
 }
 
-MsgStruct^ UsrStatusLstMsg::unpack(array<Byte>^ buff)
+RecMsgStruct^ RecUsrStatusLstMsg::unpack(array<Byte>^ buff)
 {
 	int offset = 4; //Skip messageType
 	int length;

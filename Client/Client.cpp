@@ -39,17 +39,13 @@ System::Void Client::ListenMessage()
 			Application::Exit();
 		}
 
-		MsgStruct^ msgReceived = MsgControl::unpack(buff);
-		if (msgReceived == nullptr) continue;
-		switch (msgReceived->messageType)
+		RecMsgStruct^ msgReceived = gcnew RecMsgStruct;
+		msgReceived->unpack(buff);
+		switch (msgReceived->msgType)
 		{
-		//case MsgStruct::MessageType::Login:
-			//MessageBox::Show("Login Message?");
-			//break;
-		case MsgStruct::MessageType::ResponseLogin:
+		case MessageType::ResponseLogin:
 		{
-			ResLoginMsg^ Resmsg = (ResLoginMsg^)msgReceived;
-			if (Resmsg->IsSuccess)
+			if (msgReceived->IsSuccess)
 			{
 				Client::getObject()->loginScreen->Hide();
 				//Create new form
@@ -58,85 +54,71 @@ System::Void Client::ListenMessage()
 			}
 			else
 			{
-				MessageBox::Show(Resmsg->errorMsg);
+				MessageBox::Show(msgReceived->errorMsg);
 			}
 
 			break;
 		}
-		case MsgStruct::MessageType::PublicMessage:
+		case MessageType::PublicMessage:
 		{
-			PublicMsg^ msg = (PublicMsg^)msgReceived;
-			Client::getObject()->mainScreen->AddTextToContent(msg->strMessage);
-
+			Client::getObject()->mainScreen->AddTextToContent(msgReceived->strMessage);
 			break;
 		}
-		case MsgStruct::MessageType::PrivateMessage:
+		case MessageType::PrivateMessage:
 		{
-			PrivateMsg^ msg = (PrivateMsg^)msgReceived;
-			Client::getObject()->setPrivateMessage(msg->strToUsername, msg->strMessage);
+			Client::getObject()->setPrivateMessage(msgReceived->ToUsername, msgReceived->strMessage);
 			break;
 		}
-		case MsgStruct::MessageType::ResponseSignup:
+		case MessageType::ResponseSignup:
 		{
-			ResSignupMsg^ resmsg = (ResSignupMsg^)msgReceived;
-			if (resmsg->IsSuccess)
+			if (msgReceived->IsSuccess)
 			{
 				MessageBox::Show("Signed up!");
 			}
 			else
 			{
-				MessageBox::Show(resmsg->errorMsg);
+				MessageBox::Show(msgReceived->errorMsg);
 			}
 			break;
 		}
-		//case MsgStruct::MessageType::Signup:
-		//{
-			//MessageBox::Show("Sign up received?");
-			//break;
-		//}
-		case MsgStruct::MessageType::UserStatus:
+		case MessageType::UserStatus:
 		{
-			UsrStatusLstMsg^ statlstmsg = (UsrStatusLstMsg^)msgReceived;
-			Client::getObject()->mainScreen->SetOnlineUsers(statlstmsg->lstOnlineUsers);
+			Client::getObject()->mainScreen->SetOnlineUsers(msgReceived->lstOnlineUsers);
 			break;
 		}
-		case MsgStruct::MessageType::LoginNotification:
+		case MessageType::LoginNotification:
 		{
-			LoginNotifiMsg^ NotiMsg = (LoginNotifiMsg^)msgReceived;
-			Client::getObject()->mainScreen->AddTextToContent(NotiMsg->strUsername + " has just online!");
-			Client::getObject()->mainScreen->AddAnOnlineUser(NotiMsg->strUsername);
+			Client::getObject()->mainScreen->AddTextToContent(msgReceived->usrname + " has just online!");
+			Client::getObject()->mainScreen->AddAnOnlineUser(msgReceived->usrname);
 			break;
 		}
-		case MsgStruct::MessageType::LogoutNotification:
+		case MessageType::LogoutNotification:
 		{
-			LogoutNotiMsg^ logoutmsg = (LogoutNotiMsg^)msgReceived;
-			Client::getObject()->mainScreen->AddTextToContent(logoutmsg->strUsername + " left the conference!");
-			Client::getObject()->mainScreen->DeleteAnOnlineUser(logoutmsg->strUsername);
+			Client::getObject()->mainScreen->AddTextToContent(msgReceived->usrname + " left the conference!");
+			Client::getObject()->mainScreen->DeleteAnOnlineUser(msgReceived->usrname);
 			break;
 		}
-		case MsgStruct::MessageType::RequestSendFile:
+		case MessageType::RequestSendFile:
 		{
-			RequestFileMsg^ reqmsg = (RequestFileMsg^)msgReceived;
-			if (MessageBox::Show(reqmsg->strUsername + " want to send you a file " +
-				reqmsg->strFileName + " (" + Convert::ToString(reqmsg->iFileSize) +
+			if (MessageBox::Show(msgReceived->usrname + " want to send you a file " +
+				msgReceived->Filename + " (" + Convert::ToString(msgReceived->FileSize) +
 				" bytes).\nDo you want to receive?", "Receive a file", MessageBoxButtons::YesNo) == DialogResult::Yes)
 			{
-				Client::getObject()->responseSendFile(reqmsg->strUsername, true);
+				Client::getObject()->responseSendFile(msgReceived->usrname, true);
 			}
 			else
 			{
-				Client::getObject()->responseSendFile(reqmsg->strUsername, false);
+				Client::getObject()->responseSendFile(msgReceived->usrname, false);
 			}
 			break;
 
 		}
-		case MsgStruct::MessageType::ResponseSendFile:
+		case MessageType::ResponseSendFile:
 		{
-			ResponseFileMsg^ resfmsg = (ResponseFileMsg^)msgReceived;
-			MyClient::PrivateChannel^ prvChat = getPrivateChatFormByFriendUsername(resfmsg->strUsername);
-			if (resfmsg->IsAccept)
+			MyClient::PrivateChannel^ prvChat = getPrivateChatFormByFriendUsername(msgReceived->usrname);
+			if (msgReceived->IsSuccess)
 			{
-				setPrivateMessage(resfmsg->strUsername, resfmsg->strUsername + " accept a file "
+				setPrivateMessage(msgReceived->usrname, msgReceived->usrname + " accept a file "
 					+ prvChat->fileNameToSend + " (" + Convert::ToString(prvChat->fileSizeToSend) + " bytes) from you!");
 
 				sendPrivateFile(prvChat->strFriendUsername, prvChat->fileNameToSend, prvChat->filePathToSend);
@@ -144,7 +126,7 @@ System::Void Client::ListenMessage()
 			else
 			{
 
-				setPrivateMessage(resfmsg->strUsername, resfmsg->strUsername + " don't accept to receive file "
+				setPrivateMessage(msgReceived->usrname, msgReceived->usrname + " don't accept to receive file "
 					+ prvChat->fileNameToSend + " (" + Convert::ToString(prvChat->fileSizeToSend) + " bytes) from you!");
 			}
 
@@ -154,19 +136,29 @@ System::Void Client::ListenMessage()
 
 			break;
 		}
-		case MsgStruct::MessageType::PrivateFile:
+		case MessageType::PrivateFile:
 		{
-			PrivateFileMsg^ fmsg = (PrivateFileMsg^)msgReceived;
-			MyClient::PrivateChannel^ prvChat = getPrivateChatFormByFriendUsername(fmsg->strUsername);
-			if (fmsg->iPackageNumber == 1)
-				prvChat->writerStream = gcnew FileStream(prvChat->pathFileToReceiver + "/" + fmsg->strFilename, FileMode::Create, FileAccess::Write);
+			MyClient::PrivateChannel^ prvChat = getPrivateChatFormByFriendUsername(msgReceived->usrname);
+			if (msgReceived->iPackageNumber == 1)
+				prvChat->writerStream = gcnew FileStream(prvChat->pathFileToReceiver + "/" + msgReceived->Filename, FileMode::Create, FileAccess::Write);
+			if (prvChat->writerStream->CanWrite) {
+				prvChat->writerStream->Write(msgReceived->bData, 0, msgReceived->bData->Length);
+				prvChat->writerStream->Flush();
+			}
 
-			prvChat->writerStream->Write(fmsg->bData, 0, fmsg->bData->Length);
-			setPrivateMessage(fmsg->strUsername, "Received: " + fmsg->iPackageNumber + "/" + fmsg->iTotalPackage);
+			setPrivateMessage(msgReceived->usrname, "Received: " + msgReceived->iPackageNumber + "/" + msgReceived->iTotalPackage);
 
 			break;
 		}
-
+		case MessageType::PublicFile:  //Client.cpp
+		{
+			if (msgReceived->iPackageNumber == 1)
+				internalStream = gcnew FileStream(filePath + "/" + msgReceived->Filename, FileMode::Create, FileAccess::Write);
+			internalStream->Write(msgReceived->bData, 0, msgReceived->bData->Length);
+			internalStream->Flush();
+			if (msgReceived->iPackageNumber == msgReceived->iTotalPackage) internalStream->Close();
+			Client::getObject()->mainScreen->AddTextToContent(" Received: " + msgReceived->iPackageNumber + "/" + msgReceived->iTotalPackage);
+		}
 		default:
 			break;
 		}
@@ -184,99 +176,90 @@ int Client::createThreadListenMessageFromServer()
 
 int Client::login(String^ _Username, String^ _Password)
 {
-	LoginMsg^ loginpck = gcnew LoginMsg();
-	loginpck->strUsername = _Username;
-	loginpck->strPassword = _Password;
-
-	array<Byte>^ byteData = loginpck->pack();
-	cli_socket->sendMessage(byteData);
+	MsgStruct^ loginpck = gcnew MsgStruct;
+	loginpck->pack(MessageType::Login, nullptr, _Username);
+	loginpck->pullMsg(_Password);
+	cli_socket->sendMessage(loginpck->getContent());
 
 	return 0;
 }
 
 int Client::logout()
 {
-	LogoutNotiMsg^ logOut = gcnew LogoutNotiMsg;
-
-	array<Byte>^ byteData = logOut->pack();
-	cli_socket->sendMessage(byteData);
+	MsgStruct^ logoutpck = gcnew MsgStruct;
+	logoutpck->pack(MessageType::LogoutNotification, nullptr, nullptr);
+	cli_socket->sendMessage(logoutpck->getContent());
 
 	return 0;
 }
 
 int Client::signup(String^ _Username, String^ _Password)
 {
-	SignupMsg^ msg= gcnew SignupMsg();
-	msg->strUsername = _Username;
-	msg->strPassword = _Password;
-
-	array<Byte>^ byteData = msg->pack();
-	cli_socket->sendMessage(byteData);
+	MsgStruct^ msg = gcnew MsgStruct;
+	msg->pack(MessageType::Signup, nullptr, _Username);
+	msg->pullMsg(_Password);
+	cli_socket->sendMessage(msg->getContent());
 
 	return 0;
 }
 
 int Client::sendPublicMessage(String^ _Message)
 {
-	PublicMsg^ msg = gcnew PublicMsg;
-	msg->strMessage = _Message;
-
-	array<Byte>^ byteData = msg->pack();
-
-	cli_socket->sendMessage(byteData);
+	MsgStruct^ msg = gcnew MsgStruct();
+	msg->pack(MessageType::PublicMessage, nullptr, nullptr);
+	msg->pullMsg(_Message);
+	cli_socket->sendMessage(msg->getContent());
 
 	return 0;
 }
 
 int Client::sendPrivateMessage(String^ _ToUsername, String^ _Message)
 {
-	PrivateMsg^ msg = gcnew PrivateMsg;
-	msg->strToUsername = _ToUsername;
-	msg->strMessage = _Message;
-
-	array<Byte>^ byteData = msg->pack();
-	cli_socket->sendMessage(byteData);
+	MsgStruct^ msg = gcnew MsgStruct();
+	msg->pack(MessageType::PrivateMessage, _ToUsername, nullptr);
+	msg->pullMsg(_Message);
+	cli_socket->sendMessage(msg->getContent());
 
 	return 0;
 }
 
 int Client::requestListOnlineUsers()
 {
-	UsrStatusLstMsg^ statlst = gcnew UsrStatusLstMsg;
-	array<Byte>^ byteData = statlst->pack();
-	cli_socket->sendMessage(byteData);
+	MsgStruct^ statlst = gcnew MsgStruct;
+	statlst->pack(MessageType::UserStatus, nullptr, nullptr);
+	cli_socket->sendMessage(statlst->getContent());
 
 	return 0;
 }
 
 int Client::requestSendFile(String^ _ToUsername, String^ _FileName, int _iFileSize)
 {
-	RequestFileMsg^ reqmsg = gcnew RequestFileMsg;
-	reqmsg->strFileName = _FileName;
-	reqmsg->strUsername = _ToUsername;
-	reqmsg->iFileSize = _iFileSize;
-	array<Byte>^ byteData = reqmsg->pack();
-	cli_socket->sendMessage(byteData);
+	MsgStruct^ reqmsg = gcnew MsgStruct;
+	//reqmsg->strFileName = _FileName;
+	//reqmsg->strUsername = _ToUsername;
+	//reqmsg->iFileSize = _iFileSize;
+	reqmsg->pack(MessageType::RequestSendFile, _ToUsername, nullptr);  //change
+	reqmsg->pullMsg(_FileName);
+	reqmsg->pullInt(_iFileSize);
+	cli_socket->sendMessage(reqmsg->getContent());
 
 	return 0;
 }
 
 int Client::responseSendFile(String^ _ToUsername, bool _IsAccept)
 {
-	ResponseFileMsg^ resfmsg = gcnew ResponseFileMsg;
-	resfmsg->strUsername = _ToUsername;
-	resfmsg->IsAccept = _IsAccept;
-	array<Byte>^ byteData = resfmsg->pack();
-	cli_socket->sendMessage(byteData);
+	MsgStruct^ resfmsg = gcnew MsgStruct;
+	//resfmsg->strUsername = _ToUsername;
+	//resfmsg->IsAccept = _IsAccept;
+	resfmsg->pack(MessageType::ResponseSendFile, nullptr, _ToUsername);
+	resfmsg->pullBool(_IsAccept);
+	cli_socket->sendMessage(resfmsg->getContent());
 
 	return 0;
 }
 
 int Client::sendPrivateFile(String^ _ToUsername, String^ _FileName, String^ _FilePath)
 {
-	PrivateFileMsg^ fmsg = gcnew PrivateFileMsg;
-	fmsg->strFilename = _FileName;
-	fmsg->strUsername = _ToUsername;
 	//Spit to smaller packages to send to server
 
 	array<Byte>^ buffer;
@@ -305,18 +288,77 @@ int Client::sendPrivateFile(String^ _ToUsername, String^ _FileName, String^ _Fil
 
 		for (; curPackageNumber <= iTotalPackage; ++curPackageNumber)
 		{
+			MsgStruct^ fmsg = gcnew MsgStruct;
 			int copyLength = counter + BUFF_SIZE < sum ? BUFF_SIZE : (sum % BUFF_SIZE);
 			array<Byte>^ bData = gcnew array<Byte>(copyLength);
 			Console::WriteLine(copyLength);
 			System::Array::Copy(buffer, counter, bData, 0, copyLength);
 			counter += BUFF_SIZE;
 
-			fmsg->iPackageNumber = iTotalPackage;
-			fmsg->iTotalPackage = iTotalPackage;
-			fmsg->bData = bData;
-			array<Byte>^ byteData = fmsg->pack();
-			cli_socket->sendMessage(byteData);
+			fmsg->pack(MessageType::PrivateFile, nullptr, _ToUsername);
+			fmsg->pullMsg(_FileName);
+			fmsg->pullInt(curPackageNumber);
+			fmsg->pullInt(iTotalPackage);
+			fmsg->pullData(bData);
+			cli_socket->sendMessage(fmsg->getContent());
 			setPrivateMessage(_ToUsername, "Sent: " + curPackageNumber + "/" + iTotalPackage);
+		}
+
+	}
+	catch (Exception^ e)
+	{
+		Console::WriteLine(e->Message);
+	}
+	finally
+	{
+		if (fileStream != nullptr)
+			fileStream->Close();
+	}
+
+	return 0;
+}
+
+int Client::sendPublicFile(String^ _FileName, String^ _FilePath) {
+	array<Byte>^ buffer;
+
+	FileStream^ fileStream = nullptr;
+	try
+	{
+		fileStream = gcnew FileStream(_FilePath, FileMode::Open, FileAccess::Read);
+
+		int length = (int)fileStream->Length;  // get file length
+		buffer = gcnew array<Byte>(length);            // create buffer
+
+		int count;                            // actual number of bytes read
+		int sum = 0;                          // total number of bytes read
+
+		// read until Read method returns 0 (end of the stream has been reached)
+		while ((count = fileStream->Read(buffer, sum, length - sum)) > 0)
+		{
+			sum += count;  // sum is a buffer offset for next reading
+		}
+
+		int BUFF_SIZE = 512;
+		int counter = 0;
+		int curPackageNumber = 1;
+		int iTotalPackage = sum / (BUFF_SIZE + 1) + 1;
+
+		for (; curPackageNumber <= iTotalPackage; ++curPackageNumber)
+		{
+			MsgStruct^ fmsg = gcnew MsgStruct;
+			int copyLength = counter + BUFF_SIZE < sum ? BUFF_SIZE : (sum % BUFF_SIZE);
+			array<Byte>^ bData = gcnew array<Byte>(copyLength);
+			Console::WriteLine(copyLength);
+			System::Array::Copy(buffer, counter, bData, 0, copyLength);
+			counter += BUFF_SIZE;
+
+			fmsg->pack(MessageType::PublicFile, nullptr, nullptr);
+			fmsg->pullMsg(_FileName);
+			fmsg->pullInt(curPackageNumber);
+			fmsg->pullInt(iTotalPackage);
+			fmsg->pullData(bData);
+			cli_socket->sendMessage(fmsg->getContent());
+			Client::getObject()->mainScreen->AddTextToContent(" Sent: " + curPackageNumber + "/" + iTotalPackage);
 		}
 
 	}

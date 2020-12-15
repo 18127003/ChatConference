@@ -56,6 +56,7 @@ namespace MyClient {
 	private: System::Windows::Forms::Button^  butDisconnect;
 	private: System::Windows::Forms::Label^  labOnline;
 	private: System::Windows::Forms::ListBox^  lbOnlineUser;
+	private: System::Windows::Forms::Button^  butFile;   //newwww
 
 	private:
 		/// <summary>
@@ -81,6 +82,7 @@ namespace MyClient {
 			this->butDisconnect = (gcnew System::Windows::Forms::Button());
 			this->labOnline = (gcnew System::Windows::Forms::Label());
 			this->lbOnlineUser = (gcnew System::Windows::Forms::ListBox());
+			this->butFile = (gcnew System::Windows::Forms::Button());  //newwwwww
 			this->SuspendLayout();
 			this->label1->AutoSize = true;
 			this->label1->Location = System::Drawing::Point(12, 9);
@@ -152,6 +154,13 @@ namespace MyClient {
 			this->lbOnlineUser->Size = System::Drawing::Size(137, 160);
 			this->lbOnlineUser->TabIndex = 21;
 			this->lbOnlineUser->MouseDoubleClick += gcnew System::Windows::Forms::MouseEventHandler(this, &ClientInterface::lbOnlineUser_MouseDoubleClick);
+			this->butFile->Location = System::Drawing::Point(380, 300);
+			this->butFile->Name = L"butFile";
+			this->butFile->Size = System::Drawing::Size(50, 39);
+			this->butFile->TabIndex = 22;
+			this->butFile->Text = L"Choose File";
+			this->butFile->UseVisualStyleBackColor = true;
+			this->butFile->Click += gcnew System::EventHandler(this, &ClientInterface::butFile_Click);
 			this->AcceptButton = this->butSend;
 			this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
 			this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
@@ -168,6 +177,7 @@ namespace MyClient {
 			this->Controls->Add(this->txtMessage);
 			this->Controls->Add(this->DisplayChatBox);
 			this->Controls->Add(this->label1);
+			this->Controls->Add(this->butFile);
 			this->FormBorderStyle = System::Windows::Forms::FormBorderStyle::FixedSingle;
 			this->MaximizeBox = false;
 			this->Name = L"MainScreen";
@@ -181,18 +191,23 @@ namespace MyClient {
 
 		}
 #pragma endregion
+	public: String^ filePathToSend = nullptr;
+	public: String^ fileNameToSend = nullptr;
+	public: int fileSizeToSend = 0;
 	private: System::Void label1_Click(System::Object^  sender, System::EventArgs^  e) {
 	}
 	private: System::Void label3_Click(System::Object^  sender, System::EventArgs^  e) {
 	}
 	private: System::Void MainScreen_Load(System::Object^  sender, System::EventArgs^  e);
 	private: System::Void butSend_Click(System::Object^  sender, System::EventArgs^  e);
+	private: System::Void butFile_Click(System::Object^  sender, System::EventArgs^  e); //newwwwwwwwww
 	private: System::Void MainScreen_FormClosing(System::Object^  sender, System::Windows::Forms::FormClosingEventArgs^  e);
 	public: void AddTextToContent(String^ text);
 	public: void UpdateOnlineUsers();
 	public: void AddAnOnlineUser(String^ username);
 	public: void DeleteAnOnlineUser(String^ username);
 	public: void SetOnlineUsers(array<String^>^ arrOnlineUsers);
+	public: System::Void ThreadChooseFile();  //newwwwwwwwwww
 	private: System::Void lbOnlineUser_MouseDoubleClick(System::Object^  sender, System::Windows::Forms::MouseEventArgs^  e);
 	private: System::Void butDisconnect_Click(System::Object^  sender, System::EventArgs^  e);
 	private: System::Void MainScreen_FormClosed(System::Object^  sender, System::Windows::Forms::FormClosedEventArgs^  e);

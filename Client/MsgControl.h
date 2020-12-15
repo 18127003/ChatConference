@@ -1,8 +1,8 @@
 #pragma  once
-#include "MsgStruct.h"
+#include "DataStruct.h"
 
 ref class MsgControl
 {
 public:
-	static MsgStruct^ unpack(array<Byte>^ buff);
+	static RecMsgStruct^ unpack(array<Byte>^ buff);
 };

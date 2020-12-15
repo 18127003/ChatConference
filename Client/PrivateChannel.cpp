@@ -1,3 +1,4 @@
+
 #include "PrivateChannel.h"
 using namespace MyClient;
 
@@ -35,7 +36,7 @@ void PrivateChannel::SetCaption(String^ txtCaption)
 void PrivateChannel::AddTextToDisplayChatbox(String^ text)
 {
 	DisplayChatBox->AppendText(text);
-	DisplayChatBox->AppendText("\n");
+	DisplayChatBox->AppendText(Environment::NewLine);
 }
 System::Void PrivateChannel::butSend_Click(System::Object^  sender, System::EventArgs^  e) {
 

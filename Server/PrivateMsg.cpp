@@ -1,5 +1,5 @@
 #include "PrivateMsg.h"
-
+/*
 PrivateMsg::PrivateMsg()
 {
 	strToUsername = nullptr;
@@ -9,7 +9,7 @@ PrivateMsg::PrivateMsg()
 array<Byte>^ PrivateMsg::pack()
 {
 	List<Byte>^ byteData = gcnew List<Byte>();
-	byteData->AddRange(BitConverter::GetBytes(int(MsgStruct::MessageType::PrivateMessage)));
+	byteData->AddRange(BitConverter::GetBytes(int(MessageType::PrivateMessage)));
 
 	//add Username info
 	if (strToUsername != nullptr)
@@ -53,3 +53,4 @@ MsgStruct^ PrivateMsg::unpack(array<Byte>^ buff)
 
 	return this;
 }
+*/

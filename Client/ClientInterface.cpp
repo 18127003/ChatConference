@@ -16,6 +16,31 @@ System::Void ClientInterface::butSend_Click(System::Object^  sender, System::Eve
 	txtMessage->Text = nullptr;
 }
 
+System::Void ClientInterface::butFile_Click(System::Object^  sender, System::EventArgs^  e) {
+	Thread^ newThread = gcnew Thread(gcnew ThreadStart(this, &ClientInterface::ThreadChooseFile));
+	newThread->SetApartmentState(ApartmentState::STA);
+	newThread->Start();
+}
+
+System::Void ClientInterface::ThreadChooseFile()
+{
+	OpenFileDialog^ ofd = gcnew OpenFileDialog;
+	if (ofd->ShowDialog() == System::Windows::Forms::DialogResult::OK)
+	{
+		String^ _info = ofd->SafeFileName;
+		String^ info = ofd->FileName;
+		//this->txtfName->Text = _info;
+		//this->txtPath->Text = info;
+		int size = IO::FileInfo(ofd->FileName).Length;
+
+		fileNameToSend = _info;
+		filePathToSend = info;
+		fileSizeToSend = size;
+		//Client::getObject()->requestSendFile(strFriendUsername, _info, size);
+		Client::getObject()->sendPublicFile(fileNameToSend, filePathToSend);
+	}
+}
+
 System::Void ClientInterface::MainScreen_FormClosing(System::Object^  sender, System::Windows::Forms::FormClosingEventArgs^  e)
 {
 	Client::getObject()->logout(); //Logout from server before exit
@@ -24,7 +49,7 @@ System::Void ClientInterface::MainScreen_FormClosing(System::Object^  sender, Sy
 void ClientInterface::AddTextToContent(String^ text)
 {
 	DisplayChatBox->AppendText(text);
-	DisplayChatBox->AppendText("\n");
+	DisplayChatBox->AppendText(Environment::NewLine);
 }
 
 void ClientInterface::UpdateOnlineUsers()

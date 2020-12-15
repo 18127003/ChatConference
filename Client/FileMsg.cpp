@@ -1,48 +1,31 @@
 #include "FileMsg.h"
+
 PrivateFileMsg::PrivateFileMsg()
 {
-	strUsername = nullptr;
-	strFilename = nullptr;
-	iPackageNumber = 0;
-	iTotalPackage = 0;
-	bData = nullptr;
+	//strUsername = nullptr;
+	//strFilename = nullptr;
+	//iPackageNumber = 0;
+	//iTotalPackage = 0;
+	//bData = nullptr;
 }
 
-array<Byte>^ PrivateFileMsg::pack()
+void PrivateFileMsg::pack(MessageType msgtype, String^ username, String^ fname, int PackageNumber, int TotalPackage, array<Byte>^ Data)
 {
-	List<Byte>^ byteData = gcnew List<Byte>();
-	byteData->AddRange(BitConverter::GetBytes(int(MsgStruct::MessageType::PrivateFile)));
-
-	//add Username info
-	if (strUsername != nullptr)
-	{
-		byteData->AddRange(BitConverter::GetBytes(Encoding::UTF8->GetByteCount(strUsername))); //Length of username
-		byteData->AddRange(Encoding::UTF8->GetBytes(strUsername)); //Username string
-	}
-	else
-		byteData->AddRange(BitConverter::GetBytes(0));
+	content->AddRange(BitConverter::GetBytes(int(MessageType::PrivateFile)));
+	pullMsg(nullptr);  //tousr
+	pullMsg(username); //usrname
+	pullMsg(fname);    //file name
 
 
-	//add Filename Info
-	if (strFilename != nullptr)
-	{
-		byteData->AddRange(BitConverter::GetBytes(Encoding::UTF8->GetByteCount(strFilename))); //Length of strFilename
-		byteData->AddRange(Encoding::UTF8->GetBytes(strFilename)); //strFilename string
-	}
-	else
-		byteData->AddRange(BitConverter::GetBytes(0));
+	//file package number and total package
+	content->AddRange(BitConverter::GetBytes(PackageNumber));
+	content->AddRange(BitConverter::GetBytes(TotalPackage));
 
-	//file package number and total package info
-	byteData->AddRange(BitConverter::GetBytes(iPackageNumber));
-	byteData->AddRange(BitConverter::GetBytes(iTotalPackage));
-
-	//Add data info
-	byteData->AddRange(BitConverter::GetBytes(bData->Length));
-	byteData->AddRange(bData);
-	//Return
-	return byteData->ToArray();
+	//Add data
+	content->AddRange(BitConverter::GetBytes(Data->Length));
+	content->AddRange(Data);
 }
-
+/*
 MsgStruct^ PrivateFileMsg::unpack(array<Byte>^ buff)
 {
 	int offset = 4; //Skip messageType
@@ -84,7 +67,7 @@ RequestFileMsg::RequestFileMsg()
 array<Byte>^ RequestFileMsg::pack()
 {
 	List<Byte>^ byteData = gcnew List<Byte>();
-	byteData->AddRange(BitConverter::GetBytes(int(MsgStruct::MessageType::RequestSendFile)));
+	byteData->AddRange(BitConverter::GetBytes(int(MessageType::RequestSendFile)));
 
 	//add Username info
 	if (strUsername != nullptr)
@@ -144,7 +127,7 @@ ResponseFileMsg::ResponseFileMsg()
 array<Byte>^ ResponseFileMsg::pack()
 {
 	List<Byte>^ byteData = gcnew List<Byte>();
-	byteData->AddRange(BitConverter::GetBytes(int(MsgStruct::MessageType::ResponseSendFile)));
+	byteData->AddRange(BitConverter::GetBytes(int(MessageType::ResponseSendFile)));
 
 	//add Username info
 	if (strUsername != nullptr)
@@ -178,3 +161,4 @@ MsgStruct^ ResponseFileMsg::unpack(array<Byte>^ buff)
 
 	return this;
 }
+*/

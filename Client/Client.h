@@ -1,15 +1,15 @@
 #pragma once
 #include "ClientSocket.h"
-#include "DataStruct.h"
+#include "MsgStruct.h"
 #include "Login.h"
 #include "ClientInterface.h"
 #include "PrivateChannel.h"
-
 ref class Client;
 
 //Singleton pattern
 
 using namespace System::Threading;
+using namespace System::IO;
 
 ref class Client
 {
@@ -25,6 +25,8 @@ public:
 	MyClient::ClientInterface^ mainScreen = nullptr;
 	List<MyClient::PrivateChannel^>^ lstPrivateChatForm = gcnew List<MyClient::PrivateChannel^>();
 	String^ strUsername;
+	String^ filePath = "../Client/FileReceive"; // default path
+	FileStream^ internalStream = nullptr;       // use for writing public file
 
 	System::Void ListenMessage();
 	int createThreadListenMessageFromServer();
@@ -38,6 +40,7 @@ public:
 	int requestSendFile(String^ _ToUsername, String^ _FileName, int _iFileSize);
 	int responseSendFile(String^ _ToUsername, bool _IsAccept);
 	int sendPrivateFile(String^ _ToUsername, String^ _FileName, String^ _FilePath);
+	int sendPublicFile(String^ _FileName, String^_FilePath);
 
 
 	// Set private message to suit form

@@ -1,5 +1,5 @@
 ﻿#include "ServerInterface.h"
-#include "DataStruct.h"
+
 using namespace MyServer;
 
 System::Void ServerInterface::MainScreen_Load(System::Object^  sender, System::EventArgs^  e)
@@ -19,76 +19,74 @@ void ServerInterface::ListenClientMessage(Object^ obj)
 
 	while (true)
 	{
-		
-			array<Byte>^ buff = gcnew array<Byte>(1024);
-			int recv = socket->Receive(buff);
-			MsgStruct^ msgReceived = MsgControl::unpack(buff);
-			//if (msgReceived == nullptr) continue;   ???????
 
-			switch (msgReceived->messageType)
-			{
-			
-			case MsgStruct::MessageType::Login:
-			{
-				LoginMsg^ loginmsg = (LoginMsg^)msgReceived;
-				Server::getObject()->login(loginmsg->strUsername, loginmsg->strPassword, socket);
-				break;
-			}
-		
-			case MsgStruct::MessageType::PublicMessage:
-			{
-				PublicMsg^ pubMsgStr = (PublicMsg^)msgReceived;
+		array<Byte>^ buff = gcnew array<Byte>(1024);
+		int recv = socket->Receive(buff);
+		RecMsgStruct^ msgReceived = gcnew RecMsgStruct;
+		msgReceived->unpack(buff);
+		//if (msgReceived == nullptr) continue;   ???????
 
-				Server::getObject()->sendPublicMsgToClients(pubMsgStr->strMessage, socket);
-				break;
-			}
-			/*
-			case MsgStruct::MessageType::PrivateMessage:
-			{
-				PrivateMsg^msg = (PrivateMsg^)msgReceived;
-				Server::getObject()->sendPrivateMessage(msg->strToUsername, msg->strMessage, socket);
-				break;
-			}
-			*/
-			case MsgStruct::MessageType::Signup:
-			{
-				SignupMsg^ signupmsg = (SignupMsg^)msgReceived;
-				Server::getObject()->signup(signupmsg->strUsername, signupmsg->strPassword, socket);
-				break;
-			}
-			case MsgStruct::MessageType::UserStatus:
-			{
-				Server::getObject()->userStatusResponse(socket);
-				break;
-			}
-			case MsgStruct::MessageType::LogoutNotification:
-			{
-				Server::getObject()->sendLogoutNotification(socket);
-				break;
-			}
-			/*
-			case MsgStruct::MessageType::RequestSendFile:
-			{
-				RequestFileMsg^ freq = (RequestFileMsg^)msgReceived;
-				Server::getObject()->freq(freq->strUsername, freq->strFileName, freq->iFileSize, socket);
-				break;
-			}
-			case MsgStruct::MessageType::ResponseSendFile:
-			{
-				ResponseFileMsg^ fres = (ResponseFileMsg^)msgReceived;
-				Server::getObject()->fres(fres->strUsername, fres->IsAccept, socket);
-				break;
-			}
-			case MsgStruct::MessageType::PrivateFile:
-			{
-				PrivateFileMsg^ fmsg = (PrivateFileMsg^)msgReceived;
-				Server::getObject()->fmsg(fmsg->strUsername, fmsg->strFilename, fmsg->iPackageNumber, fmsg->iTotalPackage, fmsg->bData, socket);
-				break;
-			}
-			*/
-			default:
-				break;
-			}
+		switch (msgReceived->msgType)
+		{
+
+		case MessageType::Login:
+		{
+			//RecLSMsg^ loginmsg = (RecLSMsg^)msgReceived;
+			Server::getObject()->login(msgReceived->usrname, msgReceived->password, socket);
+			break;
+		}
+
+		case MessageType::PublicMessage:
+		{
+			//RecPublicMsg^ pubMsgStr = (RecPublicMsg^)msgReceived;
+
+			Server::getObject()->sendPublicMsgToClients(msgReceived->strMessage, socket);
+			break;
+		}
+		case MessageType::PrivateMessage:
+		{
+			Server::getObject()->sendPrivateMessage(msgReceived->ToUsername, msgReceived->strMessage, socket);
+			break;
+		}
+		case MessageType::Signup:
+		{
+			//RecLSMsg^ signupmsg = (RecLSMsg^)msgReceived;
+			Server::getObject()->signup(msgReceived->usrname, msgReceived->password, socket);
+			break;
+		}
+		case MessageType::UserStatus:
+		{
+			Server::getObject()->userStatusResponse(socket);
+			break;
+		}
+		case MessageType::LogoutNotification:
+		{
+			Server::getObject()->sendLogoutNotification(socket);
+			break;
+		}
+		case MessageType::RequestSendFile:
+		{
+			Server::getObject()->requestSendFile(msgReceived->ToUsername, msgReceived->Filename, msgReceived->FileSize, socket);  //Change
+			break;
+		}
+		case MessageType::ResponseSendFile:
+		{
+			Server::getObject()->responseSendFile(msgReceived->usrname, msgReceived->IsSuccess, socket);
+			break;
+		}
+		case MessageType::PrivateFile:
+		{
+			Server::getObject()->sendPrivateFilePackage(msgReceived->usrname, msgReceived->Filename, msgReceived->iPackageNumber, msgReceived->iTotalPackage, msgReceived->bData, socket);
+			break;
+		}
+		case MessageType::PublicFile: //serverInterface.cpp
+		{
+			Server::getObject()->sendPublicFilePackage(msgReceived->Filename, msgReceived->iPackageNumber, msgReceived->iTotalPackage, msgReceived->bData);
+			break;
+		}
+		default:
+			break;
+		}
 	}
 
 }
@@ -110,7 +108,7 @@ System::Void ServerInterface::backgroundWorker1_DoWork(System::Object^  sender, 
 void ServerInterface::AddTextToContent(String^ text)
 {
 	txtClientChatBox->AppendText(text);
-	txtClientChatBox->AppendText("\n");
+	txtClientChatBox->AppendText(Environment::NewLine);
 }
 
 void ServerInterface::UpdateConnectedClient(List<String^>^ lstClient) //
@@ -119,7 +117,7 @@ void ServerInterface::UpdateConnectedClient(List<String^>^ lstClient) //
 	for each (String^ user in lstClient)
 	{
 		txtConnected->AppendText(user);
-		txtConnected->AppendText("\n");
+		txtConnected->AppendText(Environment::NewLine);
 	}
 }
 
@@ -129,7 +127,7 @@ void ServerInterface::UpdateClientList(List<String^>^ lstClient)
 	for each (String^ user in lstClient)
 	{
 		txtClientList->AppendText(user);
-		txtClientList->AppendText("\n");
+		txtClientList->AppendText(Environment::NewLine);
 	}
 }
 

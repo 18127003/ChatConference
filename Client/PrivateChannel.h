@@ -1,5 +1,4 @@
 #pragma once
-
 namespace MyClient {
 	ref class PrivateChannel;
 }
@@ -22,14 +21,16 @@ namespace MyClient {
 		PrivateChannel(void)
 		{
 			InitializeComponent();
-			pathFileToReceiver = System::Reflection::Assembly::GetEntryAssembly()->Location;
+			//pathFileToReceiver = System::Reflection::Assembly::GetEntryAssembly()->Location;
+			pathFileToReceiver = "../Client/FileReceive";
 		}
 
 		PrivateChannel(String^ myUsername, String^ friendUsername) : strMyUsername(myUsername), strFriendUsername(friendUsername)
 		{
 			InitializeComponent();
 			this->Text = "Private Chat With " + strFriendUsername;
-			pathFileToReceiver = System::Reflection::Assembly::GetEntryAssembly()->Location;
+			//pathFileToReceiver = System::Reflection::Assembly::GetEntryAssembly()->Location;
+			pathFileToReceiver = "../Client/FileReceive";
 		}
 
 	protected:

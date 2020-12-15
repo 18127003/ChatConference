@@ -1,5 +1,6 @@
 #pragma once
-#include "MsgStruct.h"
+//#include "MsgStruct.h"
+/*
 ref class PrivateMsg : public MsgStruct
 {
 public:
@@ -10,3 +11,4 @@ public:
 	virtual array<Byte>^ pack() override;
 	virtual MsgStruct^ unpack(array<Byte>^ buff) override;
 };
+*/

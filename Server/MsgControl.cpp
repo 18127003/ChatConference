@@ -1,19 +1,19 @@
-#include "DataStruct.h"
+#include "MsgControl.h"
 
-MsgStruct^ MsgControl::unpack(array<Byte>^ buff)
+RecMsgStruct^ MsgControl::unpack(array<Byte>^ buff)
 {
 	if (buff->Length == 0)
 		return nullptr;
 
-	MsgStruct^ result = nullptr; //The result
-	MsgStruct::MessageType messageType = (MsgStruct::MessageType)BitConverter::ToInt32(buff, 0); //Read first 4 byte for messageType
+	RecMsgStruct^ result = nullptr; //The result
+	MessageType messageType = (MessageType)BitConverter::ToInt32(buff, 0); //Read first 4 byte for messageType
 
 	//
 	switch (messageType)
 	{
-	case MsgStruct::MessageType::PublicMessage:
-		result = gcnew PublicMsg();
-		result->messageType = MsgStruct::MessageType::PublicMessage;
+	case MessageType::PublicMessage:
+		result = gcnew RecPublicMsg(MessageType::PublicMessage);
+		//result->msgType = MessageType::PublicMessage;
 		result->unpack(buff);
 		break;
 		/*
@@ -28,9 +28,9 @@ MsgStruct^ MsgControl::unpack(array<Byte>^ buff)
 			result->unpack(buff);
 			break;
 		*/
-	case MsgStruct::MessageType::UserStatus:
-		result = gcnew UsrStatusLstMsg();
-		result->messageType = MsgStruct::MessageType::UserStatus;
+	case MessageType::UserStatus:
+		result = gcnew RecUsrStatusLstMsg();
+		result->msgType = MessageType::UserStatus;
 		result->unpack(buff);
 		break;
 		/*
@@ -45,37 +45,37 @@ MsgStruct^ MsgControl::unpack(array<Byte>^ buff)
 			result->unpack(buff);
 			break;
 		*/
-	case MsgStruct::MessageType::Login:
-		result = gcnew LoginMsg(); //Login Unpack
-		result->messageType = MsgStruct::MessageType::Login;
+	case MessageType::Login:
+		result = gcnew RecLSMsg(MessageType::Login); //Login Unpack
+		//result->messageType = MsgStruct::MessageType::Login;
 		result->unpack(buff); //Call Override function
 		break;
-	case MsgStruct::MessageType::ResponseLogin:
-		result = gcnew ResLoginMsg();
-		result->messageType = MsgStruct::MessageType::ResponseLogin;
+	case MessageType::ResponseLogin:
+		result = gcnew RecLSMsg(MessageType::ResponseLogin);
+		//result->messageType = MsgStruct::MessageType::ResponseLogin;
 		result->unpack(buff);
 		break;
-	case MsgStruct::MessageType::Signup:
-		result = gcnew SignupMsg();
-		result->messageType = MsgStruct::MessageType::Signup;
-		result->unpack(buff);
-
-		break;
-	case MsgStruct::MessageType::ResponseSignup:
-		result = gcnew ResSignupMsg();
-		result->messageType = MsgStruct::MessageType::ResponseSignup;
+	case MessageType::Signup:
+		result = gcnew RecLSMsg(MessageType::Signup);
+		//result->messageType = MsgStruct::MessageType::Signup;
 		result->unpack(buff);
 
 		break;
-	case MsgStruct::MessageType::LoginNotification:
-		result = gcnew LoginNotifiMsg();
-		result->messageType = MsgStruct::MessageType::LoginNotification;
+	case MessageType::ResponseSignup:
+		result = gcnew RecLSMsg(MessageType::ResponseSignup);
+		//result->messageType = MsgStruct::MessageType::ResponseSignup;
 		result->unpack(buff);
 
 		break;
-	case MsgStruct::MessageType::LogoutNotification:
-		result = gcnew LogoutNotiMsg();
-		result->messageType = MsgStruct::MessageType::LogoutNotification;
+	case MessageType::LoginNotification:
+		result = gcnew RecLSMsg(MessageType::LoginNotification);
+		//result->messageType = MsgStruct::MessageType::LoginNotification;
+		result->unpack(buff);
+
+		break;
+	case MessageType::LogoutNotification:
+		result = gcnew RecLSMsg(MessageType::LogoutNotification);
+		//result->messageType = MsgStruct::MessageType::LogoutNotification;
 		result->unpack(buff);
 		break;
 
